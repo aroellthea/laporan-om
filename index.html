@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a1a1a">
+<title>Laporan OM Doorlock</title>
+<style>
+:root{
+  --ink:#1a1a1a; --yellow:#f5c400; --paper:#f4f4f2; --line:#cfcfca; --white:#fff; --muted:#6b6b66; --ok:#1f7a3d;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--paper);color:var(--ink);font-size:16px;line-height:1.4;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px}
+header.top{background:var(--ink);color:var(--white);margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:18px max(16px,env(safe-area-inset-left,0px));text-align:center;border-bottom:4px solid var(--yellow)}
+header.top h1{margin:0;font-size:1.35rem;letter-spacing:.06em;color:var(--yellow);text-transform:uppercase}
+header.top p{margin:2px 0 0;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase}
+main{max-width:640px;margin:0 auto}
+form{display:grid;gap:14px;margin-top:18px}
+label{display:grid;gap:6px;font-weight:700;font-size:.8rem;letter-spacing:.05em;text-transform:uppercase}
+input,select,textarea{font:inherit;font-weight:400;text-transform:none;letter-spacing:0;width:100%;padding:12px;border:2px solid var(--line);border-radius:6px;background:var(--white);color:var(--ink)}
+textarea{min-height:84px;resize:vertical}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid var(--yellow);outline-offset:1px;border-color:var(--ink)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:380px){.row{grid-template-columns:1fr}}
+.photos{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pick{border:2px dashed var(--ink);border-radius:6px;background:var(--white);min-height:150px;display:grid;place-items:center;text-align:center;padding:8px;cursor:pointer;position:relative;overflow:hidden}
+.pick span.t{font-weight:700;font-size:.8rem;letter-spacing:.05em;text-transform:uppercase;display:block;margin-bottom:4px}
+.pick small{color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0}
+.pick img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pick input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;padding:0;border:0}
+.pick .tag{position:absolute;left:0;right:0;bottom:0;background:var(--ink);color:var(--yellow);font-size:.72rem;font-weight:700;padding:4px;letter-spacing:.08em;z-index:1}
+button{font:inherit;font-weight:800;letter-spacing:.04em;border:0;border-radius:6px;padding:14px 16px;cursor:pointer;text-transform:uppercase}
+.primary{background:var(--yellow);color:var(--ink);border:2px solid var(--ink)}
+.dark{background:var(--ink);color:var(--yellow)}
+.green{background:#1fa855;color:#fff}
+.ghost{background:transparent;color:var(--ink);border:2px solid var(--ink)}
+.actions{display:grid;gap:10px}
+.actions .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#result{margin-top:26px;display:none}
+#result h2,#hist h2{font-size:.9rem;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px}
+#preview{width:100%;height:auto;display:block;border:2px solid var(--ink);background:#fff}
+.note{font-size:.85rem;color:var(--muted);margin:10px 0 0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--white);padding:10px 16px;border-radius:6px;font-size:.9rem;max-width:90vw;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;text-align:center}
+.toast.show{opacity:1}
+#hist{margin-top:34px}
+.item{display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--white);border:2px solid var(--line);border-radius:6px;padding:10px 12px;margin-bottom:8px}
+.item b{display:block}
+.item small{color:var(--muted)}
+.item button{padding:8px 12px;font-size:.75rem}
+.item .info{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.item .btns{display:flex;gap:6px;flex-shrink:0}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Laporan Pekerjaan</h1>
+  <p>Ownership Maintenance Doorlock</p>
+</header>
+
+<main>
+<form id="f" autocomplete="off">
+  <div class="row">
+    <label>Tanggal<input type="date" id="tanggal" required></label>
+    <label>Shift
+      <select id="shift"><option>Shift 1</option><option>Shift 2</option><option>Shift 3</option></select>
+    </label>
+  </div>
+  <label>Jenis Pekerjaan
+    <select id="jenis">
+      <option>Repair</option><option>Preventive</option><option>Corrective</option><option>Modifikasi</option><option>Inspeksi</option><option>Setting</option><option>Lainnya</option>
+    </select>
+  </label>
+  <div class="row">
+    <label>Line<input id="line" placeholder="mis. ASDL06" required></label>
+    <label>Nama Mesin<input id="mesin" placeholder="mis. spinning subplate" required></label>
+  </div>
+  <label>Problem / Temuan<textarea id="problem" required placeholder="Apa masalah yang ditemukan?"></textarea></label>
+  <label>Analisis / Penyebab<textarea id="analisis" placeholder="Penyebab atau dugaan penyebab"></textarea></label>
+  <label>Tindakan Perbaikan<textarea id="tindakan" required placeholder="Apa yang dikerjakan?"></textarea></label>
+  <div class="row">
+    <label>Hasil Pekerjaan
+      <select id="hasil"><option>Selesai</option><option>Monitoring</option><option>Belum selesai</option><option>Menunggu sparepart</option></select>
+    </label>
+    <label>Nama Pelaksana<input id="pelaksana" placeholder="Nama" required></label>
+  </div>
+
+  <div>
+    <label style="margin-bottom:8px">Dokumentasi Before &amp; After</label>
+    <div class="photos">
+      <label class="pick" id="pickB"><span><span class="t">Before</span><small>Ketuk untuk foto / pilih</small></span><input type="file" accept="image/*" id="fotoB"></label>
+      <label class="pick" id="pickA"><span><span class="t">After</span><small>Ketuk untuk foto / pilih</small></span><input type="file" accept="image/*" id="fotoA"></label>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="primary">Buat Laporan</button>
+    <button type="button" class="ghost" id="reset">Kosongkan Form</button>
+  </div>
+</form>
+
+<section id="result">
+  <h2>Hasil Laporan</h2>
+  <img id="preview" alt="Pratinjau laporan pekerjaan">
+  <div class="actions" style="margin-top:14px">
+    <button class="green" id="shareWA" type="button">Kirim ke WhatsApp (PDF)</button>
+    <div class="two">
+      <button class="dark" id="dlPdf" type="button">Simpan PDF</button>
+      <button class="dark" id="shareImg" type="button">Kirim Gambar</button>
+    </div>
+  </div>
+  <p class="note" id="shareNote"></p>
+</section>
+
+<section id="hist" hidden>
+  <h2>Riwayat Laporan</h2>
+  <div id="histList"></div>
+</section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+var BULAN=["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+var photos={B:null,A:null}; // dataURL
+var current=null; // {pdfBlob, jpgBlob, name}
+var KEY_HIST="om_hist_v1", KEY_LAST="om_last_v1";
+
+function toast(t){var e=$("toast");e.textContent=t;e.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(function(){e.classList.remove("show")},2600)}
+function lsGet(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
+
+function todayISO(){var d=new Date();var m=("0"+(d.getMonth()+1)).slice(-2),dd=("0"+d.getDate()).slice(-2);return d.getFullYear()+"-"+m+"-"+dd}
+function fmtTanggal(iso){var p=iso.split("-");if(p.length<3)return iso;return p[2]+" "+BULAN[parseInt(p[1],10)-1]+" "+p[0]}
+
+/* ---------- foto ---------- */
+function readPhoto(file,max){
+  return new Promise(function(res,rej){
+    var fr=new FileReader();
+    fr.onerror=rej;
+    fr.onload=function(){
+      var im=new Image();
+      im.onerror=rej;
+      im.onload=function(){
+        var s=Math.min(1,max/Math.max(im.width,im.height));
+        var c=document.createElement("canvas");c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
+        c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+        res(c.toDataURL("image/jpeg",.85));
+      };
+      im.src=fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+function showPick(which){
+  var box=$(which==="B"?"pickB":"pickA");
+  var old=box.querySelector("img.pv");if(old)old.remove();
+  var oldTag=box.querySelector(".tag");if(oldTag)oldTag.remove();
+  if(photos[which]){
+    var im=document.createElement("img");im.className="pv";im.src=photos[which];im.alt="Foto "+(which==="B"?"before":"after");
+    box.insertBefore(im,box.firstChild);
+    var tg=document.createElement("div");tg.className="tag";tg.textContent=(which==="B"?"BEFORE":"AFTER")+" · ketuk untuk ganti";
+    box.appendChild(tg);
+  }
+}
+["B","A"].forEach(function(w){
+  $("foto"+w).addEventListener("change",function(e){
+    var f=e.target.files&&e.target.files[0];if(!f)return;
+    readPhoto(f,1400).then(function(d){photos[w]=d;showPick(w)}).catch(function(){toast("Foto tidak bisa dibaca")});
+  });
+});
+
+/* ---------- gambar laporan (canvas A4) ---------- */
+var W=1240,H=1754,M=46;
+function wrap(ctx,text,maxW){
+  var out=[];
+  String(text||"").split(/\r?\n/).forEach(function(par){
+    if(par.trim()===""){out.push("");return}
+    var words=par.split(/\s+/),line="";
+    words.forEach(function(w){
+      // pecah kata yang lebih lebar dari kolom
+      while(ctx.measureText(w).width>maxW){
+        var n=w.length;while(n>1&&ctx.measureText(w.slice(0,n)).width>maxW)n--;
+        if(line){out.push(line);line=""}
+        out.push(w.slice(0,n));w=w.slice(n);
+      }
+      var t=line?line+" "+w:w;
+      if(ctx.measureText(t).width>maxW&&line){out.push(line);line=w}else line=t;
+    });
+    out.push(line);
+  });
+  return out;
+}
+function loadImg(src){return new Promise(function(res){if(!src)return res(null);var i=new Image();i.onload=function(){res(i)};i.onerror=function(){res(null)};i.src=src})}
+function fitBox(ctx,img,x,y,w,h,pad){
+  var bw=w-pad*2,bh=h-pad*2,s=Math.min(bw/img.width,bh/img.height);
+  var dw=img.width*s,dh=img.height*s;
+  ctx.drawImage(img,x+(w-dw)/2,y+(h-dh)/2,dw,dh);
+}
+function drawReport(d,imgB,imgA){
+  var c=document.createElement("canvas");c.width=W;c.height=H;
+  var ctx=c.getContext("2d");
+  ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);
+  var F="Helvetica, Arial, sans-serif";
+  // header
+  ctx.fillStyle="#1a1a1a";ctx.fillRect(M,38,W-2*M,108);
+  ctx.textAlign="center";ctx.textBaseline="alphabetic";
+  ctx.fillStyle="#f5c400";ctx.font="bold 54px "+F;ctx.fillText("LAPORAN PEKERJAAN",W/2,102);
+  ctx.fillStyle="#fff";ctx.font="bold 24px "+F;ctx.fillText("OWNERSHIP MAINTENANCE DOORLOCK",W/2,134);
+  // tabel
+  var rows=[
+    ["TANGGAL",fmtTanggal(d.tanggal)],["SHIFT",d.shift],["JENIS PEKERJAAN",d.jenis],["LINE",d.line],
+    ["NAMA MESIN",d.mesin],["PROBLEM / TEMUAN",d.problem],["ANALISIS / PENYEBAB",d.analisis||"-"],
+    ["TINDAKAN PERBAIKAN",d.tindakan],["HASIL PEKERJAAN",d.hasil],["NAMA PELAKSANA",d.pelaksana]
+  ];
+  var x0=M,labelW=374,tableW=W-2*M,valW=tableW-labelW,pad=11,lh=33,y=172;
+  ctx.textAlign="left";ctx.textBaseline="alphabetic";
+  rows.forEach(function(r,i){
+    ctx.font="26px "+F;
+    var lines=wrap(ctx,r[1],valW-pad*2-6);
+    var rh=Math.max(46,lines.length*lh+pad*2-4);
+    ctx.fillStyle="#f5c400";ctx.fillRect(x0,y,labelW,rh);
+    ctx.fillStyle=(i%2===0)?"#f4f4f4":"#ffffff";ctx.fillRect(x0+labelW,y,valW,rh);
+    ctx.strokeStyle="#bdbdbd";ctx.lineWidth=2;ctx.strokeRect(x0,y,tableW,rh);
+    ctx.beginPath();ctx.moveTo(x0+labelW,y);ctx.lineTo(x0+labelW,y+rh);ctx.stroke();
+    ctx.fillStyle="#1a1a1a";ctx.font="bold 25px "+F;
+    ctx.fillText(r[0],x0+pad+2,y+pad+22);
+    ctx.font="26px "+F;ctx.fillStyle="#222";
+    lines.forEach(function(l,k){ctx.fillText(l,x0+labelW+pad+2,y+pad+23+k*lh)});
+    y+=rh;
+  });
+  // dokumentasi
+  y+=52;
+  ctx.fillStyle="#1a1a1a";ctx.font="bold 30px "+F;ctx.fillText("DOKUMENTASI BEFORE & AFTER",M,y);
+  y+=18;
+  var barH=52,half=(W-2*M)/2,footerTop=H-120;
+  ctx.fillStyle="#1a1a1a";ctx.fillRect(M,y,W-2*M,barH);
+  ctx.fillStyle="#fff";ctx.font="bold 26px "+F;ctx.textAlign="center";
+  ctx.fillText("BEFORE",M+half/2,y+36);ctx.fillText("AFTER",M+half*1.5,y+36);
+  var top=y+barH,bh=Math.max(260,footerTop-top);
+  ctx.strokeStyle="#bdbdbd";ctx.lineWidth=2;ctx.strokeRect(M,top,W-2*M,bh);
+  ctx.beginPath();ctx.moveTo(M+half,top);ctx.lineTo(M+half,top+bh);ctx.stroke();
+  [[imgB,M],[imgA,M+half]].forEach(function(p){
+    if(p[0])fitBox(ctx,p[0],p[1],top,half,bh,12);
+    else{ctx.fillStyle="#9a9a95";ctx.font="24px "+F;ctx.textAlign="center";ctx.fillText("Tidak ada foto",p[1]+half/2,top+bh/2)}
+  });
+  // footer
+  ctx.textAlign="center";ctx.fillStyle="#666";ctx.font="bold 22px "+F;
+  ctx.fillText("Dibuat otomatis oleh Sistem OM Doorlock.",W/2,H-60);
+  return c;
+}
+
+/* ---------- PDF minimal (1 halaman A4, gambar JPEG) ---------- */
+function makePdf(jpg,iw,ih){
+  var enc=new TextEncoder(),chunks=[],len=0,offs=[];
+  function add(x){var b=typeof x==="string"?enc.encode(x):x;chunks.push(b);len+=b.length}
+  var PW=595.28,PH=841.89;
+  add("%PDF-1.4\n");
+  offs[1]=len;add("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+  offs[2]=len;add("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n");
+  offs[3]=len;add("3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "+PW+" "+PH+"] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n");
+  offs[4]=len;add("4 0 obj\n<< /Type /XObject /Subtype /Image /Width "+iw+" /Height "+ih+" /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length "+jpg.length+" >>\nstream\n");add(jpg);add("\nendstream\nendobj\n");
+  var cs="q "+PW+" 0 0 "+PH+" 0 0 cm /Im0 Do Q";
+  offs[5]=len;add("5 0 obj\n<< /Length "+cs.length+" >>\nstream\n"+cs+"\nendstream\nendobj\n");
+  var xr=len;
+  var x="xref\n0 6\n0000000000 65535 f \n";
+  for(var i=1;i<=5;i++)x+=("0000000000"+offs[i]).slice(-10)+" 00000 n \n";
+  add(x+"trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n"+xr+"\n%%EOF");
+  return new Blob(chunks,{type:"application/pdf"});
+}
+function canvasJpeg(c,q){return new Promise(function(res){c.toBlob(res,"image/jpeg",q)})}
+
+/* ---------- ambil data form ---------- */
+function getData(){
+  return {tanggal:$("tanggal").value,shift:$("shift").value,jenis:$("jenis").value,line:$("line").value.trim(),mesin:$("mesin").value.trim(),
+    problem:$("problem").value.trim(),analisis:$("analisis").value.trim(),tindakan:$("tindakan").value.trim(),
+    hasil:$("hasil").value,pelaksana:$("pelaksana").value.trim()};
+}
+function setData(d){
+  ["tanggal","shift","jenis","line","mesin","problem","analisis","tindakan","hasil","pelaksana"].forEach(function(k){if(d[k]!=null)$(k).value=d[k]});
+}
+function safeName(d){return ("Laporan-OM_"+d.tanggal+"_"+(d.line||"line")+"_"+(d.mesin||"mesin")).replace(/[^\w\-]+/g,"_").replace(/_+/g,"_")}
+
+/* ---------- buat laporan ---------- */
+$("f").addEventListener("submit",function(e){
+  e.preventDefault();
+  var d=getData();
+  Promise.all([loadImg(photos.B),loadImg(photos.A)]).then(function(im){
+    var c=drawReport(d,im[0],im[1]);
+    return canvasJpeg(c,.92).then(function(jb){
+      return jb.arrayBuffer().then(function(buf){
+        var pdf=makePdf(new Uint8Array(buf),c.width,c.height);
+        current={pdf:pdf,jpg:jb,name:safeName(d),data:d};
+        $("preview").src=URL.createObjectURL(jb);
+        $("result").style.display="block";
+        $("shareNote").textContent="Ketuk “Kirim ke WhatsApp”, lalu pilih WhatsApp dan grup tujuan.";
+        $("result").scrollIntoView({behavior:"smooth",block:"start"});
+        saveHistory(d);
+        lsSet(KEY_LAST,{line:d.line,mesin:d.mesin,pelaksana:d.pelaksana,shift:d.shift});
+      });
+    });
+  }).catch(function(err){toast("Gagal membuat laporan");console.error(err)});
+});
+
+/* ---------- bagikan / simpan ---------- */
+function download(blob,name){
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(function(){a.remove();URL.revokeObjectURL(a.href)},1500);
+}
+function shareFile(blob,name,type,fallbackLabel){
+  var file=new File([blob],name,{type:type});
+  var text="Laporan Pekerjaan OM Doorlock\n"+fmtTanggal(current.data.tanggal)+" · "+current.data.line+" · "+current.data.mesin;
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    navigator.share({files:[file],title:"Laporan Pekerjaan OM",text:text}).catch(function(err){if(err&&err.name!=="AbortError"){toast("Gagal membuka menu bagikan")}});
+  }else{
+    download(blob,name);
+    $("shareNote").textContent="Menu bagikan tidak tersedia di sini, jadi "+fallbackLabel+" disimpan ke HP. Buka WhatsApp, ketuk ikon lampiran, pilih Dokumen, lalu pilih file tersebut.";
+    toast("File disimpan ke HP");
+  }
+}
+$("shareWA").addEventListener("click",function(){if(current)shareFile(current.pdf,current.name+".pdf","application/pdf","PDF")});
+$("shareImg").addEventListener("click",function(){if(current)shareFile(current.jpg,current.name+".jpg","image/jpeg","gambar")});
+$("dlPdf").addEventListener("click",function(){if(current){download(current.pdf,current.name+".pdf");toast("PDF disimpan")}});
+
+/* ---------- riwayat ---------- */
+function saveHistory(d){
+  var h=lsGet(KEY_HIST,[]);
+  var rec={id:Date.now(),d:d,B:photos.B,A:photos.A};
+  // perkecil foto untuk riwayat
+  Promise.all([thumb(photos.B),thumb(photos.A)]).then(function(t){
+    rec.B=t[0];rec.A=t[1];
+    h.unshift(rec);h=h.slice(0,12);
+    while(h.length&&!lsSet(KEY_HIST,h))h.pop();
+    renderHistory();
+  });
+}
+function thumb(src){
+  return loadImg(src).then(function(im){
+    if(!im)return null;
+    var s=Math.min(1,700/Math.max(im.width,im.height));
+    var c=document.createElement("canvas");c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
+    c.getContext("2d").drawImage(im,0,0,c.width,c.height);return c.toDataURL("image/jpeg",.7);
+  });
+}
+function renderHistory(){
+  var h=lsGet(KEY_HIST,[]),box=$("histList");box.innerHTML="";
+  $("hist").hidden=!h.length;
+  h.forEach(function(r){
+    var it=document.createElement("div");it.className="item";
+    var info=document.createElement("div");info.className="info";
+    var b=document.createElement("b");b.textContent=r.d.line+" · "+r.d.mesin;
+    var s=document.createElement("small");s.textContent=fmtTanggal(r.d.tanggal)+" · "+r.d.jenis+" · "+r.d.pelaksana;
+    info.appendChild(b);info.appendChild(s);
+    var bt=document.createElement("div");bt.className="btns";
+    var o=document.createElement("button");o.className="dark";o.type="button";o.textContent="Buka";
+    o.onclick=function(){setData(r.d);photos.B=r.B;photos.A=r.A;showPick("B");showPick("A");window.scrollTo({top:0,behavior:"smooth"});toast("Dimuat ke form. Ketuk Buat Laporan.")};
+    var x=document.createElement("button");x.className="ghost";x.type="button";x.textContent="Hapus";
+    x.onclick=function(){var l=lsGet(KEY_HIST,[]).filter(function(q){return q.id!==r.id});lsSet(KEY_HIST,l);renderHistory()};
+    bt.appendChild(o);bt.appendChild(x);it.appendChild(info);it.appendChild(bt);box.appendChild(it);
+  });
+}
+
+/* ---------- reset & awal ---------- */
+function initForm(){
+  var last=lsGet(KEY_LAST,{});
+  $("f").reset();photos.B=null;photos.A=null;showPick("B");showPick("A");
+  $("tanggal").value=todayISO();
+  if(last.line)$("line").value=last.line;
+  if(last.mesin)$("mesin").value=last.mesin;
+  if(last.pelaksana)$("pelaksana").value=last.pelaksana;
+  if(last.shift)$("shift").value=last.shift;
+}
+$("reset").addEventListener("click",function(){initForm();toast("Form dikosongkan")});
+initForm();renderHistory();
+})();
+</script>
+</body>
+</html>
